@@ -83,14 +83,13 @@ src/
   data/                  demoData.ts (ALL seed data, one dataset) · roles.ts
   services/              store.tsx (AppStore: auth, approval, per-user scope,
                          notifications, forgot password, remembered logins,
-                         theme, toast, chain actions)
-                         mockApi.ts (fake API boundary) · storage.ts (the only
+                         theme, toast, chain actions) · storage.ts (the only
                          place that touches Keychain/AsyncStorage) · qr.ts
   hooks/                 useAuth.ts · useTheme.ts · useToast.ts (thin wrappers)
   components/            One file per component (Icon, AppButton, AppHeader,
                          BottomNav, StatCard, ListCard, RowItem, Pill, ChipRow,
                          FormField, FilePicker, MapPicker, DocViewer, QRCode,
-                         ScanFrame, StatusBanner, Timeline, Journey, Recon,
+                         StatusBanner, Timeline, Journey, Recon,
                          EmptyState, Toast, Modal, SegmentedControl,
                          DecisionGrid, Switch, ScreenLayout)
   navigation/            types.ts (RootStackParamList — every route, typed)
