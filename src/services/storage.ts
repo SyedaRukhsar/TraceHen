@@ -1,13 +1,13 @@
 // Session storage wrappers.
-// Auth token → react-native-keychain (encrypted, backed by the Android
+// Auth token → expo-secure-store (encrypted, backed by the Android
 // Keystore). User profile + settings → AsyncStorage (non-sensitive only).
-// Screens never touch Keychain/AsyncStorage directly.
+// Screens never touch SecureStore/AsyncStorage directly.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Keychain from 'react-native-keychain';
+import * as SecureStore from 'expo-secure-store';
 import type { AppUser } from '../types/models';
 
-const TOKEN_SERVICE = 'pk.edu.uaf.tracehen.auth';
+const TOKEN_KEY = 'pk.edu.uaf.tracehen.auth.token';
 const USER_KEY = 'tracehen.user';
 const SETTINGS_KEY = 'tracehen.settings';
 
@@ -22,19 +22,14 @@ export const DEFAULT_SETTINGS: SessionSettings = {
 };
 
 export async function saveSession(user: AppUser): Promise<void> {
-  await Keychain.setGenericPassword(user.name, `demo-token-${user.name}`, {
-    service: TOKEN_SERVICE,
-  });
+  await SecureStore.setItemAsync(TOKEN_KEY, `demo-token-${user.name}`);
   await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 /** The stored auth token, or null when signed out. Used by the API layer. */
 export async function getAuthToken(): Promise<string | null> {
   try {
-    const credentials = await Keychain.getGenericPassword({
-      service: TOKEN_SERVICE,
-    });
-    return credentials ? credentials.password : null;
+    return await SecureStore.getItemAsync(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -51,9 +46,7 @@ export async function getSession(): Promise<AppUser | null> {
 }
 
 export async function clearSession(): Promise<void> {
-  await Keychain.resetGenericPassword({ service: TOKEN_SERVICE }).catch(
-    () => undefined,
-  );
+  await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => undefined);
   await AsyncStorage.removeItem(USER_KEY);
 }
 

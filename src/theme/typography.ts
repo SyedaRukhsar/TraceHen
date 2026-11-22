@@ -1,4 +1,5 @@
-// Typography scale — Manrope (bundled, see android/app/src/main/assets/fonts).
+// Typography scale — Manrope (bundled in assets/fonts/, loaded via
+// expo-font in App.tsx before the first render).
 // Reference by file name as fontFamily; the weight map below is the ONLY place
 // that maps a weight to a family. Never hard-code a font family in a screen.
 

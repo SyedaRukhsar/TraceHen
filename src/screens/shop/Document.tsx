@@ -1,19 +1,22 @@
 // Shop Document viewer (shop.html shop-view-document, shop.js
 // openDocFile). File bar (name + format badge) + the file itself:
-// PDF via react-native-pdf, photo via Image.
+// PDF opens in the system viewer via expo-sharing (no inline PDF
+// renderer works in Expo Go), photo via Image.
 // Shop license document upload is KEPT (only the license-number field
 // was removed); the two profile documents are the shop license PDF
 // (shop-license.pdf) and the signboard photo (signboard-shop.jpg).
 
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import Pdf from 'react-native-pdf';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Asset } from 'expo-asset';
+import * as Sharing from 'expo-sharing';
 import { useApp } from '../../services/store';
 import type { RootStackParamList } from '../../navigation/types';
 import { documents, images } from '../../theme/assets';
 import { fontFamily, fontSize } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { Icon } from '../../components/Icon';
 import { shopIdentity } from './helpers';
 import { EmptyNote, PageSub, PageTitle, ShopLayout } from './ui';
 
@@ -42,6 +45,32 @@ export default function ShopDocumentScreen() {
       ? images[docFile as keyof typeof images]
       : undefined;
 
+  // No inline PDF renderer works in Expo Go: open the PDF in the system
+  // viewer instead. Bundled asset (number from require) via expo-asset;
+  // a picked-file URI string is shared directly.
+  const openPdf = async () => {
+    if (!pdfSource) {
+      return;
+    }
+    const src = pdfSource as unknown as number | string;
+    if (typeof src === 'number') {
+      const asset = Asset.fromModule(src);
+      await asset.downloadAsync();
+      const uri = asset.localUri ?? asset.uri;
+      if (uri) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: docName,
+        });
+      }
+    } else {
+      await Sharing.shareAsync(src, {
+        mimeType: 'application/pdf',
+        dialogTitle: docName,
+      });
+    }
+  };
+
   return (
     <ShopLayout title="Document" activeTab="settings">
       <PageTitle>{docName}</PageTitle>
@@ -65,7 +94,18 @@ export default function ShopDocumentScreen() {
         </Text>
       </View>
       {docType === 'pdf' && pdfSource ? (
-        <Pdf source={pdfSource} style={styles.pdf} />
+        <Pressable
+          style={[styles.pdfFrame, { borderColor: colors.line, backgroundColor: colors.white }]}
+          onPress={() => void openPdf()}
+          accessibilityRole="button">
+          <Icon name="fileText" size={44} color={colors.green} />
+          <Text style={[styles.pdfOpenName, { color: colors.ink }]} numberOfLines={1}>
+            {fileName}
+          </Text>
+          <View style={[styles.pdfOpenButton, { backgroundColor: colors.green }]}>
+            <Text style={styles.pdfOpenButtonText}>Open PDF</Text>
+          </View>
+        </Pressable>
       ) : docType === 'image' && imageSource ? (
         <Image
           source={imageSource}
@@ -101,6 +141,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fileName: { flex: 1, fontSize: 12.5, fontFamily: fontFamily.bold },
-  pdf: { flex: 1, minHeight: 480 },
+  pdfFrame: {
+    width: '100%',
+    minHeight: 480,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 24,
+  },
+  pdfOpenName: { fontSize: 13, fontFamily: fontFamily.semiBold, textAlign: 'center' },
+  pdfOpenButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  pdfOpenButtonText: {
+    fontSize: 14,
+    fontFamily: fontFamily.bold,
+    color: '#ffffff',
+  },
   image: { width: '100%', height: 320, borderRadius: 12 },
 });

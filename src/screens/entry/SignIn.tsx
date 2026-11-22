@@ -157,7 +157,7 @@ export default function SignIn({ navigation }: SignInProps) {
   return (
     <ScreenLayout scroll paddingX={24}>
       <View style={styles.inner}>
-        <TouchableOpacity onPress={() => navigation.navigate('Landing')} style={styles.backLink}>
+        <TouchableOpacity onPress={() => navigation.navigate('Onboarding')} style={styles.backLink}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.head}>

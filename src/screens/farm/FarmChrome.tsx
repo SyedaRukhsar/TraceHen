@@ -5,7 +5,7 @@
 // Batches / Dispatch / Settings, active tab green-700 on green-50.
 
 import type { ReactNode } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { TextStyle, ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -81,6 +81,10 @@ export function FarmScreen({
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  // Narrow phones (< 380dp) use a compact header so the title and all
+  // buttons fit with safe margins; wider screens keep the exact locked sizes.
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
 
   // Bell badge (farm.js notifUnread): live unread + the demo seed
   // notifications until the Notifications screen is opened once.
@@ -107,6 +111,7 @@ export function FarmScreen({
         style={[
           styles.header,
           { backgroundColor: colors.card, borderBottomColor: colors.line },
+          compact ? { paddingHorizontal: 12, gap: 6 } : null,
         ]}
       >
         {canGoBack ? (
@@ -119,15 +124,23 @@ export function FarmScreen({
                 borderColor: colors.line,
                 backgroundColor: colors.green50,
               },
+              compact ? { width: 32, height: 32 } : null,
             ]}
           >
             <ArrowLeft size={20} color={colors.green900} strokeWidth={2.4} />
           </Pressable>
         ) : null}
-        <Image source={images.heroFarm} style={styles.logo} />
+        <Image
+          source={images.heroFarm}
+          style={[styles.logo, compact ? { width: 34, height: 34 } : null]}
+        />
         <View style={styles.who}>
           <Text
-            style={[styles.whoTitle, { color: colors.ink }]}
+            style={[
+              styles.whoTitle,
+              { color: colors.ink },
+              compact ? { fontSize: 14 } : null,
+            ]}
             numberOfLines={1}
           >
             TraceHen Farm
@@ -145,6 +158,7 @@ export function FarmScreen({
           style={[
             styles.iconBtn,
             { borderColor: colors.line, backgroundColor: colors.green50 },
+            compact ? { width: 34, height: 34 } : null,
           ]}
         >
           <Bell size={20} color={colors.green900} />
@@ -164,6 +178,7 @@ export function FarmScreen({
           style={[
             styles.iconBtn,
             { borderColor: colors.line, backgroundColor: colors.green50 },
+            compact ? { width: 34, height: 34 } : null,
           ]}
         >
           {theme === 'dark' ? (
@@ -175,9 +190,17 @@ export function FarmScreen({
         <Pressable
           onPress={() => navigation.navigate('FarmProfile')}
           accessibilityLabel="Open profile"
-          style={[styles.avatar, { backgroundColor: colors.green950 }]}
+          style={[
+            styles.avatar,
+            { backgroundColor: colors.green950 },
+            compact ? { width: 34, height: 34, borderRadius: 17 } : null,
+          ]}
         >
-          <Text style={styles.avatarText}>{avatarLabel}</Text>
+          <Text
+            style={[styles.avatarText, compact ? { fontSize: 13 } : null]}
+          >
+            {avatarLabel}
+          </Text>
         </Pressable>
       </View>
 

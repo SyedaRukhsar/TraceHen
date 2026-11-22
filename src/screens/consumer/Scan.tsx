@@ -30,15 +30,14 @@ import {
 } from 'react-native';
 import {
   ArrowRight,
-  Camera as CameraIcon,
   Check,
   CircleHelp,
   ScanLine,
   TriangleAlert,
   X,
 } from 'lucide-react-native';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
-import type { Code, CodeScanner } from 'react-native-vision-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import type { BarcodeScanningResult } from 'expo-camera';
 import Svg, { Rect } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useApp } from '../../services/store';
@@ -550,14 +549,12 @@ export default function ConsumerScanScreen({}: Props) {
   const [code, setCode] = useState(DEMO_CODE);
   const [error, setError] = useState('');
   const [result, setResult] = useState<LookupResult | null>(null);
-  const [permVisible, setPermVisible] = useState(false);
-  const [camPerm, setCamPerm] = useState<'while' | 'once' | 'denied' | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [camReady, setCamReady] = useState(false);
   const [camHeight, setCamHeight] = useState(300);
   const scannedRef = useRef(false);
-  const device = useCameraDevice('back');
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasPermission = permission?.granted ?? false;
 
   const openCamera = useCallback(() => {
     scannedRef.current = false;
@@ -567,7 +564,6 @@ export default function ConsumerScanScreen({}: Props) {
 
   const closeCamera = useCallback(() => {
     setCameraOpen(false);
-    setCamPerm(prev => (prev === 'once' ? null : prev));
   }, []);
 
   const showScanResult = useCallback(
@@ -601,21 +597,15 @@ export default function ConsumerScanScreen({}: Props) {
     closeCameraRef.current = closeCamera;
   }, [closeCamera]);
 
-  const codeScanner = useMemo<CodeScanner>(
-    () => ({
-      codeTypes: ['qr'],
-      onCodeScanned: (codes: Code[]) => {
-        const value = codes[0]?.value;
-        if (!value || scannedRef.current) {
-          return;
-        }
-        scannedRef.current = true;
-        closeCameraRef.current();
-        showResultRef.current(value);
-      },
-    }),
-    [],
-  );
+  const onBarcodeScanned = useCallback((event: BarcodeScanningResult) => {
+    const value = event.data;
+    if (!value || scannedRef.current) {
+      return;
+    }
+    scannedRef.current = true;
+    closeCameraRef.current();
+    showResultRef.current(value);
+  }, []);
 
   useEffect(() => {
     if (result) {
@@ -645,13 +635,17 @@ export default function ConsumerScanScreen({}: Props) {
     showScanResult(code);
   }, [code, showScanResult]);
 
+  // "Scan Code" asks the SYSTEM camera permission directly (expo-camera
+  // requestPermission) and opens the camera. There is no custom permission
+  // sheet — the system prompt is the only one, so the user is never asked
+  // twice.
   const openWithOsPermission = useCallback(async (): Promise<void> => {
     if (hasPermission) {
       openCamera();
       return;
     }
-    const granted = await requestPermission();
-    if (granted) {
+    const res = await requestPermission();
+    if (res.granted) {
       openCamera();
       return;
     }
@@ -659,37 +653,6 @@ export default function ConsumerScanScreen({}: Props) {
       'Camera access was not allowed. You can still type the pack code below to see its history.',
     );
   }, [hasPermission, openCamera, requestPermission]);
-
-  const askCameraPermission = useCallback(async (): Promise<void> => {
-    if (camPerm === 'while') {
-      await openWithOsPermission();
-      return;
-    }
-    setPermVisible(true);
-  }, [camPerm, openWithOsPermission]);
-
-  const choosePerm = useCallback(
-    async (choice: 'while' | 'once' | 'deny'): Promise<void> => {
-      setPermVisible(false);
-      if (choice === 'deny') {
-        setCamPerm('denied');
-        setError(
-          'Camera access was not allowed. You can still type the pack code below to see its history.',
-        );
-        return;
-      }
-      setCamPerm(choice);
-      setError('');
-      await openWithOsPermission();
-    },
-    [openWithOsPermission],
-  );
-
-  const permOptions: { key: 'while' | 'once' | 'deny'; label: string; deny?: boolean }[] = [
-    { key: 'while', label: 'Allow while using this site' },
-    { key: 'once', label: 'Allow this time only' },
-    { key: 'deny', label: "Don't allow", deny: true },
-  ];
 
   const resultView = result ? renderResult(result, styles) : null;
 
@@ -721,7 +684,7 @@ export default function ConsumerScanScreen({}: Props) {
           <PrimaryButton
             title="Scan Code"
             onPress={() => {
-              askCameraPermission();
+              void openWithOsPermission();
             }}
             icon={<ScanLine size={20} color={colors.white} strokeWidth={2} />}
           />
@@ -757,40 +720,7 @@ export default function ConsumerScanScreen({}: Props) {
       </ScrollView>
       <ConsumerBottomNav active="scan" />
 
-      {/* Camera permission sheet — exactly 3 options */}
-      <Modal visible={permVisible} transparent animationType="slide" onRequestClose={() => setPermVisible(false)}>
-        <Pressable style={styles.permBackdrop} onPress={() => setPermVisible(false)}>
-          <View style={styles.permCard} onStartShouldSetResponder={() => true}>
-            <View style={styles.permHead}>
-              <View style={styles.permIcon}>
-                <CameraIcon size={23} color={colors.green700} strokeWidth={2} />
-              </View>
-              <View style={styles.permHeadText}>
-                <Text style={styles.permTitle}>Allow TraceHen to access your camera?</Text>
-                <Text style={styles.permSub}>
-                  This site wants to use your camera to scan the QR code on the pack.
-                </Text>
-              </View>
-            </View>
-            {permOptions.map(opt => (
-              <Pressable
-                key={opt.key}
-                style={styles.permOpt}
-                onPress={() => {
-                  choosePerm(opt.key);
-                }}
-              >
-                <View style={styles.permRadio} />
-                <Text style={[styles.permOptText, opt.deny ? { color: colors.red } : undefined]}>
-                  {opt.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* Live camera overlay — real vision-camera feed + real QR detection */}
+      {/* Live camera overlay — real expo-camera feed + real QR detection */}
       <Modal visible={cameraOpen} animationType="slide" onRequestClose={closeCamera}>
         <View style={[styles.camOverlay, theme === 'dark' ? { backgroundColor: colors.black } : undefined]}>
           <View style={styles.camTop}>
@@ -803,15 +733,13 @@ export default function ConsumerScanScreen({}: Props) {
             style={styles.camFrame}
             onLayout={event => setCamHeight(event.nativeEvent.layout.height)}
           >
-            {device ? (
-              <Camera
-                style={StyleSheet.absoluteFill}
-                device={device}
-                isActive={cameraOpen}
-                codeScanner={codeScanner}
-                onInitialized={() => setCamReady(true)}
-              />
-            ) : null}
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              onBarcodeScanned={onBarcodeScanned}
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              onCameraReady={() => setCamReady(true)}
+            />
             {!camReady ? (
               <View style={styles.camQr}>
                 <QrPattern seed={DEMO_CODE} size={100} />
@@ -1319,73 +1247,6 @@ function makeStyles(colors: ThemeColors) {
       color: colors.muted,
       textAlign: 'center',
       marginTop: spacing.lg,
-    },
-    permBackdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(5, 30, 16, 0.55)',
-      justifyContent: 'flex-end',
-    },
-    permCard: {
-      backgroundColor: colors.card,
-      borderTopLeftRadius: 22,
-      borderTopRightRadius: 22,
-      padding: 20,
-      paddingHorizontal: 18,
-      paddingBottom: spacing.lg,
-    },
-    permHead: {
-      flexDirection: 'row',
-      gap: 13,
-      alignItems: 'flex-start',
-      marginBottom: spacing.sm,
-    },
-    permIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 13,
-      backgroundColor: colors.green50,
-      borderWidth: 1,
-      borderColor: colors.green100,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    permHeadText: {
-      flex: 1,
-    },
-    permTitle: {
-      fontFamily: fontFamily.extraBold,
-      fontSize: 16.5,
-      lineHeight: 21,
-      color: colors.ink,
-    },
-    permSub: {
-      fontFamily: fontFamily.semiBold,
-      fontSize: 12.5,
-      lineHeight: 19,
-      color: colors.muted,
-      marginTop: 3,
-    },
-    permOpt: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.gap,
-      paddingVertical: 14,
-      paddingHorizontal: 4,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.line,
-      minHeight: 52,
-    },
-    permOptText: {
-      fontFamily: fontFamily.bold,
-      fontSize: 14.5,
-      color: colors.ink,
-    },
-    permRadio: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: colors.chev,
     },
     camOverlay: {
       flex: 1,

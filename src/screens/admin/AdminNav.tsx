@@ -25,6 +25,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import type { ReactNode } from 'react';
 import { useApp } from '../../services/store';
@@ -511,6 +512,8 @@ export function AdminHeader({
 }) {
   const { colors, theme, toggleTheme, unreadCount, markNotificationsRead, currentUser, showToast } =
     useApp();
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const adminName = currentUser?.name ?? 'Demo Admin';
@@ -525,10 +528,10 @@ export function AdminHeader({
   };
 
   return (
-    <View style={headerStyles(colors).bar}>
+    <View style={headerStyles(colors, compact).bar}>
       {showBack ? (
         <Pressable
-          style={headerStyles(colors).backBtn}
+          style={headerStyles(colors, compact).backBtn}
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -536,30 +539,30 @@ export function AdminHeader({
           <ArrowLeft size={22} color={colors.green900} strokeWidth={2.4} />
         </Pressable>
       ) : null}
-      <Image source={images.heroFarm} style={headerStyles(colors).logo} />
-      <View style={headerStyles(colors).who}>
-        <Text style={headerStyles(colors).whoTitle} numberOfLines={1}>
+      <Image source={images.heroFarm} style={headerStyles(colors, compact).logo} />
+      <View style={headerStyles(colors, compact).who}>
+        <Text style={headerStyles(colors, compact).whoTitle} numberOfLines={1}>
           TraceHen Admin
         </Text>
-        <Text style={headerStyles(colors).whoSub} numberOfLines={1}>
+        <Text style={headerStyles(colors, compact).whoSub} numberOfLines={1}>
           {subtitle}
         </Text>
       </View>
       <Pressable
-        style={headerStyles(colors).iconBtn}
+        style={headerStyles(colors, compact).iconBtn}
         onPress={onBell}
         accessibilityRole="button"
         accessibilityLabel="Notifications"
       >
         <Bell size={20} color={colors.green900} strokeWidth={2} />
         {unreadCount > 0 ? (
-          <View style={headerStyles(colors).badge}>
-            <Text style={headerStyles(colors).badgeText}>{unreadCount}</Text>
+          <View style={headerStyles(colors, compact).badge}>
+            <Text style={headerStyles(colors, compact).badgeText}>{unreadCount}</Text>
           </View>
         ) : null}
       </Pressable>
       <Pressable
-        style={headerStyles(colors).iconBtn}
+        style={headerStyles(colors, compact).iconBtn}
         onPress={onTheme}
         accessibilityRole="button"
         accessibilityLabel={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
@@ -571,24 +574,26 @@ export function AdminHeader({
         )}
       </Pressable>
       <Pressable
-        style={headerStyles(colors).avatar}
+        style={headerStyles(colors, compact).avatar}
         onPress={() => navigation.navigate('AdminProfile')}
         accessibilityRole="button"
         accessibilityLabel="Open admin profile"
       >
-        <Text style={headerStyles(colors).avatarText}>{initialsOf(adminName)}</Text>
+        <Text style={headerStyles(colors, compact).avatarText}>{initialsOf(adminName)}</Text>
       </Pressable>
     </View>
   );
 }
 
-const headerStyles = (colors: ThemeColors) =>
+// Narrow phones (< 380dp) use a compact bar so the title and all buttons
+// fit with safe margins; wider screens keep the exact locked sizes.
+const headerStyles = (colors: ThemeColors, compact: boolean) =>
   StyleSheet.create({
     bar: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 18,
+      gap: compact ? 6 : 8,
+      paddingHorizontal: compact ? 12 : 18,
       paddingTop: 14,
       paddingBottom: 12,
       backgroundColor: colors.card,
@@ -596,13 +601,13 @@ const headerStyles = (colors: ThemeColors) =>
       borderBottomColor: colors.line,
     },
     backBtn: { padding: 4 },
-    logo: { width: 40, height: 40, borderRadius: radius.logoSm },
+    logo: { width: compact ? 34 : 40, height: compact ? 34 : 40, borderRadius: radius.logoSm },
     who: { flex: 1, minWidth: 0 },
-    whoTitle: { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.ink },
+    whoTitle: { fontFamily: fontFamily.extraBold, fontSize: compact ? 14 : 15, color: colors.ink },
     whoSub: { fontFamily: fontFamily.semiBold, fontSize: 12.5, color: colors.muted },
     iconBtn: {
-      width: 40,
-      height: 40,
+      width: compact ? 34 : 40,
+      height: compact ? 34 : 40,
       borderRadius: radius.appTopIcon,
       borderWidth: 1,
       borderColor: colors.line,
@@ -626,9 +631,9 @@ const headerStyles = (colors: ThemeColors) =>
     },
     badgeText: { fontFamily: fontFamily.extraBold, fontSize: 10, color: colors.white },
     avatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: compact ? 34 : 40,
+      height: compact ? 34 : 40,
+      borderRadius: compact ? 17 : 20,
       backgroundColor: colors.green,
       alignItems: 'center',
       justifyContent: 'center',

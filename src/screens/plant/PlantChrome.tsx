@@ -34,6 +34,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import type { KeyboardTypeOptions } from 'react-native';
 import { useApp } from '../../services/store';
@@ -82,17 +83,28 @@ export function PlantHeader({
   const navigation = useNavigation<PlantNav>();
   const badge = unreadCount + plantSeedNotifCount(data, scopeKey);
   const initial = (currentUser?.name ?? 'K').trim().charAt(0).toUpperCase() || 'K';
+  // Narrow phones (< 380dp) use a compact bar so the title and all buttons
+  // fit with safe margins; wider screens keep the exact locked sizes.
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const padX = compact ? 12 : 18;
+  const gap = compact ? 6 : 10;
+  const btn = compact ? 34 : 40;
+  const backSize = compact ? 32 : 36;
+  const logoSize = compact ? 34 : 40;
+  const avatarSize = compact ? 34 : 36;
+  const titleSize = compact ? 14 : 15;
 
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap,
         backgroundColor: colors.card,
         borderBottomWidth: 1,
         borderBottomColor: colors.line,
-        paddingHorizontal: 18,
+        paddingHorizontal: padX,
         paddingTop: 14,
         paddingBottom: 12,
       }}>
@@ -101,9 +113,9 @@ export function PlantHeader({
           onPress={() => navigation.goBack()}
           accessibilityLabel="Go back"
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
+            width: backSize,
+            height: backSize,
+            borderRadius: backSize / 2,
             alignItems: 'center',
             justifyContent: 'center',
           }}>
@@ -112,14 +124,14 @@ export function PlantHeader({
       ) : null}
       <Image
         source={images.heroFarm}
-        style={{ width: 40, height: 40, borderRadius: 12 }}
+        style={{ width: logoSize, height: logoSize, borderRadius: 12 }}
       />
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           numberOfLines={1}
           style={{
             fontFamily: 'Manrope-ExtraBold',
-            fontSize: 15,
+            fontSize: titleSize,
             color: colors.ink,
           }}>
           TraceHen Slaughterhouse
@@ -138,9 +150,9 @@ export function PlantHeader({
         onPress={() => navigation.navigate('PlantNotifications')}
         accessibilityLabel="Notifications"
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
+          width: btn,
+          height: btn,
+          borderRadius: btn / 2,
           alignItems: 'center',
           justifyContent: 'center',
         }}>
@@ -176,9 +188,9 @@ export function PlantHeader({
           theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
         }
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
+          width: btn,
+          height: btn,
+          borderRadius: btn / 2,
           alignItems: 'center',
           justifyContent: 'center',
         }}>
@@ -192,9 +204,9 @@ export function PlantHeader({
         onPress={() => navigation.navigate('PlantProfile')}
         accessibilityLabel="Open profile"
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
+          width: avatarSize,
+          height: avatarSize,
+          borderRadius: avatarSize / 2,
           backgroundColor: colors.green,
           alignItems: 'center',
           justifyContent: 'center',
@@ -563,7 +575,7 @@ export function Chevron() {
 /**
  * Pack QR — a REAL QR code encoding the pack ID (shared QRCode component).
  * The HTML's qrSVG is a decorative pseudo-QR that encodes nothing, so the
- * vision-camera scanner cannot read it; the RN app uses a real QR so a pack
+ * expo-camera scanner cannot read it; the RN app uses a real QR so a pack
  * can actually be scanned. Same value (the pack ID), same size.
  */
 export function PackQr({ seed, size }: { seed: string; size: number }) {

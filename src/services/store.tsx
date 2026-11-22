@@ -31,6 +31,7 @@ import type {
   Lot,
   Organization,
   Role,
+  RoleDetail,
 } from '../types/models';
 
 // ---------- Types ----------
@@ -388,12 +389,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: true, status: 'ACTIVE' };
       }
       // Business role: create a PENDING application for Admin review.
+      // Role details, exactly as the locked HTML sign-up builds them:
+      // farm: License only; vet: Vet registration no. + License;
+      // plant: Daily capacity + License; shop: none. (Sheds/Capacity are
+      // NOT collected at farm sign-up — demo seed data only.)
       const appId = `app-${Date.now()}`;
+      const roleDetails: RoleDetail[] =
+        input.role === 'vet'
+          ? [
+              ['Vet registration no.', input.regNumber.trim()],
+              ['License', input.license.trim()],
+            ]
+          : input.role === 'plant'
+            ? [
+                ['Daily capacity', input.capacity.trim()],
+                ['License', input.license.trim()],
+              ]
+            : input.role === 'shop'
+              ? []
+              : [['License', input.license.trim()]];
       const app: Application = {
         id: appId,
         person: input.name.trim(),
         phone: input.mobile.trim(),
-        phoneVerified: false,
+        phoneVerified: true,
         business: input.business.trim(),
         role: roleLabel(input.role),
         district: input.district.trim(),
@@ -403,7 +422,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdVia: 'SELF_REGISTER',
         license: input.license.trim(),
         submitted: 'Just now',
-        roleDetails: [],
+        roleDetails,
         documents: input.docs,
         sites: [{ name: input.business.trim(), place: input.address.trim() }],
         history: [{ t: 'Application submitted', s: 'Just now', c: '' }],

@@ -1,7 +1,8 @@
 // TraceHen onboarding carousel (locked v51 shell).
 // 3 cards with exact text from shell.html, dots, Skip / Next / Get Started.
 // Swipeable (horizontal paging ScrollView) + Next button.
-// Get Started / Skip -> Landing.
+// Get Started / Skip -> SignIn (locked v51 shell: the cards go straight to
+// sign-in, no landing page in between).
 
 import { useMemo, useRef, useState } from 'react';
 import {
@@ -65,15 +66,15 @@ export default function Onboarding({ navigation }: OnboardingProps) {
   const scrollRef = useRef<ScrollViewInstance | null>(null);
   const [index, setIndex] = useState(0);
 
-  const goToLanding = () => {
-    navigation.replace('Landing');
+  const goToSignIn = () => {
+    navigation.replace('SignIn');
   };
 
   const handleNext = () => {
     if (index < CARDS.length - 1) {
       scrollRef.current?.scrollTo({ x: (index + 1) * cardWidth, animated: true });
     } else {
-      goToLanding();
+      goToSignIn();
     }
   };
 
@@ -110,7 +111,7 @@ export default function Onboarding({ navigation }: OnboardingProps) {
         ))}
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={goToLanding} style={styles.skip}>
+        <TouchableOpacity onPress={goToSignIn} style={styles.skip}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
         <View style={styles.nextWrap}>

@@ -1,7 +1,9 @@
 // Top bar — CSS `.app-top`: back arrow (when onBack is provided), logo photo
 // (sm 40px), title + subtitle, bell with unread badge, theme toggle, avatar.
+// Narrow phones (< 380dp) use a compact bar so the title and all buttons
+// fit with safe margins; wider screens keep the exact locked sizes.
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useApp } from '../services/store';
 import { images } from '../theme/assets';
 import { fontForWeight } from '../theme/typography';
@@ -35,6 +37,9 @@ export function AppHeader({
   onAvatarPress,
 }: AppHeaderProps) {
   const { colors, theme, toggleTheme, currentUser } = useApp();
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const styles = makeStyles(compact);
 
   const initial = avatarInitial ?? (currentUser ? currentUser.name.charAt(0).toUpperCase() : '');
   const handleThemePress = onThemePress ?? toggleTheme;
@@ -99,26 +104,27 @@ export function AppHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    borderBottomWidth: 1,
-    paddingTop: 14,
-    paddingHorizontal: 18,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    flexShrink: 0,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
+function makeStyles(compact: boolean) {
+  return StyleSheet.create({
+    bar: {
+      borderBottomWidth: 1,
+      paddingTop: 14,
+      paddingHorizontal: compact ? 12 : 18,
+      paddingBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: compact ? 6 : 11,
+      flexShrink: 0,
+    },
+    iconButton: {
+      width: compact ? 34 : 40,
+      height: compact ? 34 : 40,
+      borderRadius: 12,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
   bellButton: {
     position: 'relative',
   },
@@ -141,8 +147,8 @@ const styles = StyleSheet.create({
     fontFamily: fontForWeight(800),
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: compact ? 34 : 40,
+    height: compact ? 34 : 40,
     borderRadius: 12,
     flexShrink: 0,
   },
@@ -151,7 +157,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 16,
+    fontSize: compact ? 14 : 16,
     fontFamily: fontForWeight(800),
   },
   subtitle: {
@@ -159,16 +165,17 @@ const styles = StyleSheet.create({
     fontFamily: fontForWeight(700),
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: compact ? 34 : 42,
+    height: compact ? 34 : 42,
+    borderRadius: compact ? 17 : 21,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: compact ? 13 : 15,
     fontFamily: fontForWeight(800),
   },
-});
+  });
+}

@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ArrowLeft, Bell, Moon, ScanLine, Settings, Sun } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../services/store';
 import { images } from '../../theme/assets';
@@ -36,7 +36,11 @@ export interface ConsumerHeaderProps {
 export function ConsumerHeader({ subtitle, showBack, onBack }: ConsumerHeaderProps) {
   const { colors, theme, toggleTheme, currentUser, unreadCount, data, scopeKey } = useApp();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const styles = makeStyles(colors);
+  // Narrow phones (< 380dp) use a compact bar so the title and all buttons
+  // fit with safe margins; wider screens keep the exact locked sizes.
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
+  const styles = makeStyles(colors, compact);
   const initial = currentUser ? currentUser.name.trim().charAt(0).toUpperCase() : 'G';
   const isDemoConsumer = scopeKey === '__demo__' && currentUser?.role === 'consumer';
   const seedCount =
@@ -163,7 +167,7 @@ export function PrimaryButton({ title, onPress, icon }: PrimaryButtonProps) {
   );
 }
 
-function makeStyles(colors: ThemeColors) {
+function makeStyles(colors: ThemeColors, compact = false) {
   return StyleSheet.create({
     top: {
       backgroundColor: colors.card,
@@ -171,20 +175,20 @@ function makeStyles(colors: ThemeColors) {
       borderBottomColor: colors.line,
       paddingTop: spacing.appTopPaddingTop,
       paddingBottom: spacing.appTopPaddingBottom,
-      paddingHorizontal: spacing.appTopPaddingX,
+      paddingHorizontal: compact ? 12 : spacing.appTopPaddingX,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.gapSm + 3,
+      gap: compact ? 6 : spacing.gapSm + 3,
     },
     backButton: {
-      width: 32,
-      height: 32,
+      width: compact ? 30 : 32,
+      height: compact ? 30 : 32,
       alignItems: 'center',
       justifyContent: 'center',
     },
     logo: {
-      width: 40,
-      height: 40,
+      width: compact ? 34 : 40,
+      height: compact ? 34 : 40,
       borderRadius: radius.logoSm,
     },
     who: {
@@ -193,7 +197,7 @@ function makeStyles(colors: ThemeColors) {
     },
     whoTitle: {
       fontFamily: fontFamily.extraBold,
-      fontSize: fontSize.md,
+      fontSize: compact ? 14 : fontSize.md,
       color: colors.ink,
     },
     whoSub: {
@@ -203,8 +207,8 @@ function makeStyles(colors: ThemeColors) {
       marginTop: 1,
     },
     iconButton: {
-      width: 40,
-      height: 40,
+      width: compact ? 34 : 40,
+      height: compact ? 34 : 40,
       borderRadius: radius.appTopIcon,
       borderWidth: 1,
       borderColor: colors.line,
@@ -230,16 +234,16 @@ function makeStyles(colors: ThemeColors) {
       color: colors.white,
     },
     avatar: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: compact ? 34 : 42,
+      height: compact ? 34 : 42,
+      borderRadius: compact ? 17 : 21,
       backgroundColor: colors.green950,
       alignItems: 'center',
       justifyContent: 'center',
     },
     avatarText: {
       fontFamily: fontFamily.extraBold,
-      fontSize: 15,
+      fontSize: compact ? 13 : 15,
       color: colors.white,
     },
     bottomNav: {

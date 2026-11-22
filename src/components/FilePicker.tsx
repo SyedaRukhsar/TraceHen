@@ -1,11 +1,11 @@
 // Dashed file-pick button — CSS `.file-pick`. Opens the native picker
-// (react-native-image-picker for images, react-native-document-picker for
+// (expo-image-picker for images, expo-document-picker for
 // PDFs) and shows the picked file by its REAL name + type badge
 // (CSS `.fmt-badge`).
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { isCancel, pickSingle, types } from 'react-native-document-picker';
-import { launchImageLibrary } from 'react-native-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../services/store';
 import { fontForWeight } from '../theme/typography';
 import { Icon } from './Icon';
@@ -34,8 +34,15 @@ export function FilePicker({ label, value, onPick, accept = 'any' }: FilePickerP
 
   const pick = async () => {
     if (accept === 'image') {
-      const res = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
-      const asset = res.assets?.[0];
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        quality: 1,
+      });
+      if (res.canceled) {
+        return;
+      }
+      const asset = res.assets[0];
       if (asset?.uri) {
         onPick({
           name: asset.fileName ?? fileNameFromUri(asset.uri),
@@ -46,20 +53,23 @@ export function FilePicker({ label, value, onPick, accept = 'any' }: FilePickerP
       return;
     }
     try {
-      const res = await pickSingle({
-        type: accept === 'pdf' ? [types.pdf] : [types.allFiles],
+      const res = await DocumentPicker.getDocumentAsync({
+        type: accept === 'pdf' ? 'application/pdf' : '*/*',
+        copyToCacheDirectory: true,
       });
-      const mime = res.type ?? '';
-      const isPdf = mime === 'application/pdf' || (res.name ?? '').toLowerCase().endsWith('.pdf');
+      if (res.canceled) {
+        return;
+      }
+      const a = res.assets[0];
+      const mime = a.mimeType ?? '';
+      const isPdf = mime === 'application/pdf' || (a.name ?? '').toLowerCase().endsWith('.pdf');
       onPick({
-        name: res.name ?? fileNameFromUri(res.uri),
+        name: a.name ?? fileNameFromUri(a.uri),
         type: isPdf ? 'pdf' : 'image',
-        file: res.uri,
+        file: a.uri,
       });
     } catch (err) {
-      if (!isCancel(err)) {
-        throw err;
-      }
+      throw err;
     }
   };
 

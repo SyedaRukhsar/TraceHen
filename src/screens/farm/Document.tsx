@@ -1,16 +1,19 @@
 // Farm Document viewer (farm.html #farm-view-document).
-// Shows the file itself (image = photo, PDF = PDF viewer) with the file
+// Shows the file itself (image = photo, PDF = opens in the system viewer
+// via expo-sharing — no inline PDF renderer works in Expo Go) with the file
 // bar (file name + format badge, as in the HTML .doc-filebar).
 
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import Pdf from 'react-native-pdf';
+import { Asset } from 'expo-asset';
+import * as Sharing from 'expo-sharing';
 import { useApp } from '../../services/store';
 import type { RootStackParamList } from '../../navigation/types';
 import { documents, images } from '../../theme/assets';
 import { fontFamily } from '../../theme/typography';
 import { radius } from '../../theme/spacing';
+import { Icon } from '../../components/Icon';
 import { FarmScreen } from './FarmChrome';
 import { PageTitle } from './farmUI';
 import { farmIdentity } from './farmHelpers';
@@ -35,6 +38,29 @@ export default function FarmDocument({ route }: Props) {
     },
   }).badge;
 
+  // No inline PDF renderer works in Expo Go: open the PDF in the system
+  // viewer instead. Bundled asset (number from require) via expo-asset;
+  // a picked-file URI string is shared directly.
+  const openPdf = async () => {
+    const src = documents.farmLicenseApp1 as unknown as number | string;
+    if (typeof src === 'number') {
+      const asset = Asset.fromModule(src);
+      await asset.downloadAsync();
+      const uri = asset.localUri ?? asset.uri;
+      if (uri) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: docName,
+        });
+      }
+    } else {
+      await Sharing.shareAsync(src, {
+        mimeType: 'application/pdf',
+        dialogTitle: docName,
+      });
+    }
+  };
+
   return (
     <FarmScreen subtitle="Document" activeTab="settings">
       <PageTitle title={docName} sub={subtitle} />
@@ -55,10 +81,18 @@ export default function FarmDocument({ route }: Props) {
         </Text>
       </View>
       {docType === 'pdf' && isLicense ? (
-        <Pdf
-          source={documents.farmLicenseApp1}
-          style={styles.pdf}
-        />
+        <Pressable
+          style={[styles.pdfFrame, { borderColor: colors.line, backgroundColor: colors.white }]}
+          onPress={() => void openPdf()}
+          accessibilityRole="button">
+          <Icon name="fileText" size={44} color={colors.green} />
+          <Text style={[styles.pdfOpenName, { color: colors.ink }]} numberOfLines={1}>
+            {fileName}
+          </Text>
+          <View style={[styles.pdfOpenButton, { backgroundColor: colors.green }]}>
+            <Text style={styles.pdfOpenButtonText}>Open PDF</Text>
+          </View>
+        </Pressable>
       ) : docType === 'image' ? (
         <Image
           source={images.signboardFarm}
@@ -100,10 +134,31 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontFamily: fontFamily.bold,
   } as TextStyle,
-  pdf: {
-    flex: 1,
+  pdfFrame: {
+    width: '100%',
     minHeight: 500,
+    borderWidth: 1,
+    borderRadius: radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 24,
   } as ViewStyle,
+  pdfOpenName: {
+    fontSize: 13,
+    fontFamily: fontFamily.semiBold,
+    textAlign: 'center',
+  } as TextStyle,
+  pdfOpenButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  } as ViewStyle,
+  pdfOpenButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: fontFamily.bold,
+  } as TextStyle,
   image: {
     width: '100%',
     height: 320,

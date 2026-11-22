@@ -28,6 +28,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { QRCode } from '../../components/QRCode';
 import { useApp } from '../../services/store';
@@ -98,6 +99,10 @@ export function ShopLayout({
     isDemo && !isShopSeedNotificationsRead() ? data.notifications.shop.length : 0;
   const badge = unreadCount + seedUnread;
   const canGoBack = navigation.canGoBack();
+  // Narrow phones (< 380dp) use a compact header so the title and all
+  // buttons fit with safe margins; wider screens keep the exact locked sizes.
+  const { width } = useWindowDimensions();
+  const compact = width < 380;
 
   const openNotifications = () => {
     markNotificationsRead();
@@ -111,18 +116,28 @@ export function ShopLayout({
         style={[
           styles.topBar,
           { backgroundColor: colors.card, borderBottomColor: colors.line },
+          compact ? { paddingHorizontal: 12, gap: 6 } : null,
         ]}>
         {canGoBack ? (
           <Pressable
             onPress={() => navigation.goBack()}
             accessibilityLabel="Go back"
-            style={styles.topIconBtn}>
+            style={[styles.topIconBtn, compact ? { minWidth: 32, minHeight: 32 } : null]}>
             <Text style={[styles.backGlyph, { color: colors.ink }]}>{'←'}</Text>
           </Pressable>
         ) : null}
-        <Image source={images.heroFarm} style={styles.logo} />
+        <Image
+          source={images.heroFarm}
+          style={[styles.logo, compact ? { width: 34, height: 34 } : null]}
+        />
         <View style={styles.who}>
-          <Text style={[styles.whoTitle, { color: colors.ink }]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.whoTitle,
+              { color: colors.ink },
+              compact ? { fontSize: 14 } : null,
+            ]}
+            numberOfLines={1}>
             TraceHen Shop
           </Text>
           <Text style={[styles.whoSub, { color: colors.muted }]} numberOfLines={1}>
@@ -132,7 +147,7 @@ export function ShopLayout({
         <Pressable
           onPress={openNotifications}
           accessibilityLabel="Notifications"
-          style={styles.topIconBtn}>
+          style={[styles.topIconBtn, compact ? { minWidth: 34, minHeight: 34 } : null]}>
           <Bell size={22} color={colors.ink} strokeWidth={2} />
           {badge > 0 ? (
             <View style={[styles.badge, { backgroundColor: colors.badgeRed }]}>
@@ -145,7 +160,7 @@ export function ShopLayout({
           accessibilityLabel={
             theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
           }
-          style={styles.topIconBtn}>
+          style={[styles.topIconBtn, compact ? { minWidth: 34, minHeight: 34 } : null]}>
           {theme === 'dark' ? (
             <Sun size={22} color={colors.ink} strokeWidth={2} />
           ) : (
@@ -155,8 +170,17 @@ export function ShopLayout({
         <Pressable
           onPress={() => navigation.navigate('ShopProfile')}
           accessibilityLabel="Open profile"
-          style={[styles.avatar, { backgroundColor: colors.green100 }]}>
-          <Text style={[styles.avatarText, { color: colors.green700 }]}>
+          style={[
+            styles.avatar,
+            { backgroundColor: colors.green100 },
+            compact ? { width: 34, height: 34, borderRadius: 17 } : null,
+          ]}>
+          <Text
+            style={[
+              styles.avatarText,
+              { color: colors.green700 },
+              compact ? { fontSize: 14 } : null,
+            ]}>
             {initialLetter(identity.name)}
           </Text>
         </Pressable>
